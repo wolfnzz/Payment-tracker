@@ -12,7 +12,7 @@ class CounterpartyView(QWidget):
 
         # 1. Инициализируем ViewModel (наш "мозг")
         self.table = None
-        self.btn_delete = None # Тестово добавлено как базовые поля
+        self.btn_delete = None  # Тестово добавлено как базовые поля
         self.btn_add = None
         self.view_model = CounterpartyViewModel()
 
@@ -29,8 +29,8 @@ class CounterpartyView(QWidget):
         self.btn_delete = QPushButton("Удалить выбранного")
 
         # Стили
-        self.btn_add.setStyleSheet("background-color: #d1ffd6; padding: 5px;")
-        self.btn_delete.setStyleSheet("background-color: #ffd1d1; padding: 5px;")
+        self.btn_add.setStyleSheet("background-color: #11a629; padding: 5px;")
+        self.btn_delete.setStyleSheet("background-color: #d61313; padding: 5px;")
 
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_delete)
@@ -98,10 +98,17 @@ class CounterpartyView(QWidget):
         if not selected_rows:
             QMessageBox.warning(self, "Внимание", "Выберите строку для удаления")
             return
+        # Окно удаления поставщика
+        rmv_box = QMessageBox(self)
+        rmv_box.setWindowTitle("Удаление")
+        rmv_box.setText("Удалить выбранного поставщика?")
+        rmv_box.setIcon(QMessageBox.Question)
+        rmv_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        rmv_box.button(QMessageBox.Yes).setText("Да")
+        rmv_box.button(QMessageBox.No).setText("Нет")
 
-        # Спрашиваем подтверждение
-        reply = QMessageBox.question(self, "Удаление", "Удалить выбранного поставщика?",
-                                     QMessageBox.Yes | QMessageBox.No)
+        # Запускаем окно и ждем ответа
+        reply = rmv_box.exec()
 
         if reply == QMessageBox.Yes:
             row_idx = selected_rows[0].row()
