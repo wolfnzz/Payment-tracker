@@ -4,13 +4,13 @@ from models.entities import Counterparty, Invoice
 
 
 def populate_test_data():
-    # 1. Открываем сессию (соединение) с базой
+    # Открываем сессию (соединение) с базой
     db = SessionLocal()
 
     try:
         print("Добавляем тестовые данные...")
 
-        # --- Создаем Контрагента (Поставщика) ---
+        # Создаем Контрагента (поставщика)
         supplier_1 = Counterparty(
             name="ООО Абоба Индастрис"
         )
@@ -24,9 +24,9 @@ def populate_test_data():
 
         print(f"-> Добавлен поставщик: {supplier_1.name} (ID: {supplier_1.id})")
 
-        # --- Создаем Счета для этого поставщика ---
+        # примеры счетов для этого поставщика
 
-        # Счет №1 (Нужно оплатить через 2 недели)
+        # Счет 1 (Нужно оплатить через 2 недели)
         invoice_1 = Invoice(
             counterparty_id=supplier_1.id,  # Ссылаемся на ID созданного выше поставщика
             invoice_number="ТК-001/24",
@@ -37,7 +37,7 @@ def populate_test_data():
             is_paid=False
         )
 
-        # Счет №2 (Уже оплачен)
+        # Счет 2 (Уже оплачен)
         invoice_2 = Invoice(
             counterparty_id=supplier_1.id,
             invoice_number="ТК-002/24",
@@ -45,7 +45,7 @@ def populate_test_data():
             invoice_date=date(2025, 11, 20),
             supply_date=date(2025, 11, 22),
             payment_term_days=5,
-            is_paid=True  # Галочка "Оплачено"
+            is_paid=True  # поле "Оплачено"
         )
 
         db.add(invoice_1)
@@ -54,7 +54,7 @@ def populate_test_data():
 
         print(f"-> Добавлены счета: {invoice_1.invoice_number} и {invoice_2.invoice_number}")
 
-        # --- Проверка чтения ---
+        # Проверка чтения
         print("\nПроверяем, что записалось в базу:")
         saved_supplier = db.query(Counterparty).first()
         print(f"Поставщик: {saved_supplier.name}")

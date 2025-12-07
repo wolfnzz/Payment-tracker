@@ -1,14 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# 1. Указываем имя файла базы данных.
+# имя файла базы данных
 DATABASE_URL = "sqlite:///records.db"
 
-# 2. Создаем "движок", который управляет подключением
+# управление подключением
 engine = create_engine(DATABASE_URL, echo=True)
 
-# 3. Создаем фабрику сессий. Через SessionLocal мы будем делать запросы (добавлять, удалять)
+# создание фабрики сессий для выполнения запросов (добавление, удаление)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# 4. Базовый класс, от которого будут наследоваться наши модели (таблицы)
+# класс, от которого наследуются модели (таблицы)
 Base = declarative_base()
