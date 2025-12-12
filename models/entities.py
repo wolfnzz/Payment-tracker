@@ -38,8 +38,7 @@ class Invoice(Base):
     amount = Column(Float, nullable=False)
 
     # Срок платежа
-    # храним количество дней отсрочки
-    payment_term_days = Column(Integer, default=0)
+    deadline_date = Column(Date, default=0)
 
     # Даты, необходимые для расчетов
     invoice_date = Column(Date, nullable=False)  # Дата выписки счета
@@ -52,17 +51,17 @@ class Invoice(Base):
     # Связь таблиц
     counterparty = relationship("Counterparty", back_populates="invoices")
 
-    @property
-    def deadline_date(self):
-        """
-        Виртуальное поле: вычисляет конкретную дату, когда нужно платить.
-        Логика: Дата поставки + Срок платежа (в днях).
-        Используется для отображения в таблице и уведомлений.
-        """
-        from datetime import timedelta
-        if self.supply_date and self.payment_term_days is not None:
-            return self.supply_date + timedelta(days=self.payment_term_days)
-        return self.supply_date
+    # @property
+    # def deadline_date(self):
+    #     """
+    #     Виртуальное поле: вычисляет конкретную дату, когда нужно платить.
+    #     Логика: Дата поставки + Срок платежа (в днях).
+    #     Используется для отображения в таблице и уведомлений.
+    #     """
+    #     from datetime import timedelta
+    #     if self.supply_date and self.payment_term_days is not None:
+    #         return self.supply_date + timedelta(days=self.payment_term_days)
+    #     return self.supply_date
 
     def __repr__(self):
         return f"<Счет {self.invoice_number} на сумму {self.amount}>"

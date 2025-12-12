@@ -23,12 +23,15 @@ class InvoiceViewModel:
         finally:
             db.close()
 
-    def add_invoice(self, counterparty_id, number, invoice_date, supply_date, amount, terms, is_paid):
+    def add_invoice(self, counterparty_id, number, invoice_date, supply_date, amount, deadline_date, is_paid, payment_date=None):
         """Создать счет"""
         db = SessionLocal()
         try:
-            # Если сразу ставим галочку "Оплачено", то дата оплаты = сегодня
-            pay_date = date.today() if is_paid else None
+            # Если галочка стоит, но дату не передали -> ставим сегодня (для удобства)
+            # Если передали (вручную в диалоге) -> оставляем как есть
+            pay_date = None
+            if is_paid:
+                pay_date = payment_date if payment_date else date.today()
 
             new_inv = Invoice(
                 counterparty_id=counterparty_id,
@@ -36,7 +39,7 @@ class InvoiceViewModel:
                 invoice_date=invoice_date, #date.today()
                 supply_date=supply_date,
                 amount=amount,
-                payment_term_days=terms,
+                deadline_date=deadline_date,
                 is_paid=is_paid,
                 payment_date=pay_date
             )
@@ -50,7 +53,8 @@ class InvoiceViewModel:
         finally:
             db.close()
 
-    def update_invoice(self, invoice_id, counterparty_id, number, invoice_date, supply_date, amount, terms, is_paid):
+    def update_invoice(self, invoice_id, counterparty_id, number, invoice_date,
+                       supply_date, amount, deadline_date, is_paid, payment_date=None):
         """Обновить существующий счет"""
         db = SessionLocal()
         try:
@@ -63,14 +67,18 @@ class InvoiceViewModel:
                 inv.invoice_date = invoice_date
                 inv.supply_date = supply_date
                 inv.amount = amount
-                inv.payment_term_days = terms
+                inv.deadline_date = deadline_date
 
-                # Логика даты оплаты при редактировании
-                if is_paid and not inv.is_paid:
-                    # Если стало оплачено, а было нет -> ставим сегодня
-                    inv.payment_date = date.today()
-                elif not is_paid:
-                    # Если сняли оплату -> убираем дату
+                # Логика даты оплаты:
+                if is_paid:
+                    # Если передали конкретную дату из диалога - берем её
+                    if payment_date:
+                        inv.payment_date = payment_date
+                    # Если даты нет, а раньше было "не оплачено" - ставим сегодня
+                    elif not inv.is_paid:
+                        inv.payment_date = date.today()
+                    # Иначе оставляем старую дату (если уже было оплачено)
+                else:
                     inv.payment_date = None
 
                 inv.is_paid = is_paid
@@ -110,3 +118,31 @@ class InvoiceViewModel:
             db.rollback()
         finally:
             db.close()
+
+    def get_filtered_invoices(self, supplier_id=None, date_type=None, filter_date=None):
+        """
+        Фильтрация счетов.
+        :param supplier_id: ID поставщика (или None, если нужны все)
+        :param date_type: Тип фильтра даты ("supply" - поставка, "deadline" - срок оплаты)
+        :param filter_date: Сама дата (datetime.date)
+        """
+
+        all_invoices = self.get_all_invoices()
+        filtered = []
+
+        for inv in all_invoices:
+            if supplier_id is not None and inv.counterparty_id != supplier_id:
+                continue
+
+            if date_type and filter_date:
+                if date_type == "supply":
+                    if inv.supply_date != filter_date:
+                        continue
+
+                elif date_type == "deadline":
+                    if inv.deadline_date != filter_date:
+                        continue
+
+            filtered.append(inv)
+
+        return filtered

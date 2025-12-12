@@ -1,6 +1,7 @@
+from PySide6.QtCore import QDate
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                                QTableWidget, QTableWidgetItem, QPushButton,
-                               QHeaderView, QMessageBox, QAbstractItemView)
+                               QHeaderView, QMessageBox, QAbstractItemView, QGroupBox, QLabel, QComboBox, QDateEdit)
 from PySide6.QtGui import QColor
 from viewmodels.invoice_viewmodel import InvoiceViewModel
 from views.add_invoice_dialog import AddInvoiceDialog
@@ -16,7 +17,48 @@ class InvoiceView(QWidget):
     def setup_ui(self):
         layout = QVBoxLayout()
 
-        # Кнопки
+        # панель фильтров
+        self.filter_group = QGroupBox("Фильтры поиска")
+        filter_layout = QHBoxLayout()
+
+        # Фильтр по поставщику
+        filter_layout.addWidget(QLabel("Поставщик:"))
+        self.filter_supplier_combo = QComboBox()
+        self.filter_supplier_combo.addItem("Все поставщики", None)  # Первый пункт - "Все"
+        # Загружаем список поставщиков в комбобокс
+        suppliers = self.view_model.get_counterparties_for_combo()
+        for s in suppliers:
+            self.filter_supplier_combo.addItem(s.name, s.id)
+        filter_layout.addWidget(self.filter_supplier_combo)
+
+        # Тип даты
+        filter_layout.addWidget(QLabel("   По дате:"))  # Отступ пробелами для красоты
+        self.filter_date_type = QComboBox()
+        self.filter_date_type.addItem("Не учитывать дату", None)
+        self.filter_date_type.addItem("Дата поставки", "supply")
+        self.filter_date_type.addItem("Срок оплаты (Дедлайн)", "deadline")
+        filter_layout.addWidget(self.filter_date_type)
+
+        # Сама дата
+        self.filter_date_edit = QDateEdit()
+        self.filter_date_edit.setCalendarPopup(True)
+        self.filter_date_edit.setDate(QDate.currentDate())
+        # По умолчанию выключим выбор даты, пока не выбран тип
+        self.filter_date_edit.setEnabled(False)
+        filter_layout.addWidget(self.filter_date_edit)
+
+        # Кнопки Применить / Сбросить
+        self.btn_apply_filter = QPushButton("Найти")
+        self.btn_reset_filter = QPushButton("Сброс")
+
+        filter_layout.addWidget(self.btn_apply_filter)
+        filter_layout.addWidget(self.btn_reset_filter)
+        filter_layout.addStretch()  # Сдвигаем всё влево
+
+        self.filter_group.setLayout(filter_layout)
+        layout.addWidget(self.filter_group)
+
+        # Кнопки управления счетами
         btn_layout = QHBoxLayout()
         self.btn_add = QPushButton("Добавить счет")
         self.btn_delete = QPushButton("Удалить счет")
@@ -63,12 +105,18 @@ class InvoiceView(QWidget):
         self.btn_add.clicked.connect(self.open_add_dialog)
         self.btn_delete.clicked.connect(self.delete_current_invoice)
         self.btn_status.clicked.connect(self.toggle_status)
-
         # Когда дважды кликаем по ячейке -> вызываем edit_current_invoice
         self.table.cellDoubleClicked.connect(self.edit_current_invoice)
 
-    def load_data(self):
+        # Кнопки фильтров
+        self.btn_apply_filter.clicked.connect(self.apply_filter)
+        self.btn_reset_filter.clicked.connect(self.reset_filter)
+        # Если меняем тип даты, включаем/выключаем поле даты
+        self.filter_date_type.currentIndexChanged.connect(self.toggle_date_edit)
+
+    def load_data(self, invoices_list=None):
         invoices = self.view_model.get_all_invoices()
+        if not (invoices_list is None): invoices = invoices_list
         self.table.setRowCount(0)
 
         for row, inv in enumerate(invoices):
@@ -86,8 +134,7 @@ class InvoiceView(QWidget):
 
             self.table.setItem(row, 4, QTableWidgetItem(inv.supply_date.strftime("%d.%m.%Y")))
 
-            deadline_str = inv.deadline_date.strftime("%d.%m.%Y")
-            self.table.setItem(row, 5, QTableWidgetItem(deadline_str))
+            self.table.setItem(row, 5, QTableWidgetItem(inv.deadline_date.strftime("%d.%m.%Y")))
 
             self.table.setItem(row, 6, QTableWidgetItem(str(inv.amount)))
 
@@ -114,9 +161,10 @@ class InvoiceView(QWidget):
             data = dialog.get_data()
             self.view_model.add_invoice(
                 data["counterparty_id"], data["number"], data["invoice_date"], data["supply_date"],
-                data["amount"], data["terms"], data["is_paid"]
+                data["amount"], data["deadline_date"], data["is_paid"], data["payment_date"]
             )
-            self.load_data()
+            #self.load_data()
+            self.apply_filter()
 
     def toggle_status(self):
         selected = self.table.selectionModel().selectedRows()
@@ -127,7 +175,8 @@ class InvoiceView(QWidget):
         inv_id = int(self.table.item(row, 0).text())
 
         self.view_model.toggle_payment_status(inv_id)
-        self.load_data()
+        #self.load_data()
+        self.apply_filter()
 
     def edit_current_invoice(self):
         """Метод для редактирования выбранного счета"""
@@ -158,8 +207,9 @@ class InvoiceView(QWidget):
             'invoice_date': target_invoice.invoice_date,
             'supply_date': target_invoice.supply_date,
             'amount': target_invoice.amount,
-            'terms': target_invoice.payment_term_days,
-            'is_paid': target_invoice.is_paid
+            'deadline_date': target_invoice.deadline_date,
+            'is_paid': target_invoice.is_paid,
+            'payment_date': target_invoice.payment_date
         }
 
         # Открываем диалог, передавая эти данные
@@ -178,12 +228,14 @@ class InvoiceView(QWidget):
                 new_data["invoice_date"],
                 new_data["supply_date"],
                 new_data["amount"],
-                new_data["terms"],
-                new_data["is_paid"]
+                new_data["deadline_date"],
+                new_data["is_paid"],
+                new_data["payment_date"]
             )
 
             # Перерисовываем таблицу
-            self.load_data()
+            #self.load_data()
+            self.apply_filter()
 
     def delete_current_invoice(self):
         selected = self.table.selectionModel().selectedRows()
@@ -200,4 +252,33 @@ class InvoiceView(QWidget):
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.view_model.delete_invoice(inv_id)
-            self.load_data()
+            #self.load_data()
+            self.apply_filter()
+
+    def toggle_date_edit(self):
+        """Включает поле даты только если выбран тип фильтрации по дате"""
+        is_date_selected = self.filter_date_type.currentData() is not None
+        self.filter_date_edit.setEnabled(is_date_selected)
+
+    def apply_filter(self):
+        """Считывает фильтры и обновляет таблицу"""
+        # 1. Поставщик
+        supplier_id = self.filter_supplier_combo.currentData()  # Вернет ID или None
+
+        # 2. Тип даты
+        date_type = self.filter_date_type.currentData()  # "supply", "deadline" или None
+
+        # 3. Значение даты
+        py_date = self.filter_date_edit.date().toPython()
+
+        # 4. Загружаем отфильтрованные данные
+        # (Передаем этот список в load_data)
+        filtered_list = self.view_model.get_filtered_invoices(supplier_id, date_type, py_date)
+        self.load_data(invoices_list=filtered_list)
+
+    def reset_filter(self):
+        """Сброс всех настроек в исходное"""
+        self.filter_supplier_combo.setCurrentIndex(0)  # Все
+        self.filter_date_type.setCurrentIndex(0)  # Не учитывать
+        self.filter_date_edit.setDate(QDate.currentDate())
+        self.load_data()  # Загружаем всё
