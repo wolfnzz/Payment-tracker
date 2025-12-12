@@ -14,9 +14,7 @@ def main():
     font = app.font()
     font.setPointSize(10)  # Размер шрифта 10 или 12
     app.setFont(font)
-    
     window.show()
-
     sys.exit(app.exec())
 
 
