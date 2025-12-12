@@ -28,8 +28,8 @@ def get_urgent_invoices():
             days_left = (deadline - today).days
 
 
-            # Показываем то, что нужно платить сегодня-завтра (0-3 дней).
-            if 0 <= days_left <= 3:
+            # Показываем то, что нужно платить сегодня-завтра (0-5 дней).
+            if 0 <= days_left <= 5:
                 urgent_list.append(inv)
 
     finally:
