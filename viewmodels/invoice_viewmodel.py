@@ -2,6 +2,7 @@ from datetime import date
 from sqlalchemy.orm import joinedload
 from models.database import SessionLocal
 from models.entities import Invoice, Counterparty
+from services.excel_exporter import save_invoices_to_excel
 
 class InvoiceViewModel:
     def get_all_invoices(self):
@@ -119,6 +120,16 @@ class InvoiceViewModel:
         finally:
             db.close()
 
+    def export_data(self, filename):
+        """
+        Получает свежие данные из БД и отправляет их в Excel-сервис
+        """
+        # Берем все счета
+        invoices = self.get_all_invoices()
+
+        # Отправляем в сервис
+        success, message = save_invoices_to_excel(invoices, filename)
+        return success, message
     def get_filtered_invoices(self, supplier_id=None, date_type=None, filter_date=None):
         """
         Фильтрация счетов.
