@@ -1,6 +1,4 @@
 import pandas as pd
-from datetime import timedelta
-
 
 def save_invoices_to_excel(invoices, filename):
     """
@@ -12,7 +10,7 @@ def save_invoices_to_excel(invoices, filename):
 
     for inv in invoices:
         # Рассчитываем дедлайн
-        deadline = inv.supply_date + timedelta(days=inv.payment_term_days)
+        deadline = inv.deadline_date
 
         # Безопасное получение имени поставщика
         supplier_name = inv.counterparty.name if inv.counterparty else "<Удален>"

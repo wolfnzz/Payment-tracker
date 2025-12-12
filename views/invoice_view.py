@@ -63,10 +63,7 @@ class InvoiceView(QWidget):
         self.btn_add = QPushButton("Добавить счет")
         self.btn_delete = QPushButton("Удалить счет")
         self.btn_status = QPushButton("Изменить статус оплаты")
-
-        #self.btn_add.setStyleSheet("background-color: #11a629; padding: 5px;")
-
-        self.btn_export = QPushButton("Выгрузить в Excel")
+        self.btn_export = QPushButton("Экспорт в Excel")
 
 
         btn_layout.addWidget(self.btn_add)

@@ -21,15 +21,17 @@ def get_urgent_invoices():
 
         for inv in unpaid_invoices:
             # Считаем дату дедлайна
-            deadline = inv.supply_date + timedelta(days=inv.payment_term_days)
+            deadline = inv.deadline_date
+
+            if not deadline:
+                continue
 
             # Считаем, сколько дней осталось
-            #
             days_left = (deadline - today).days
 
 
             # Показываем то, что нужно платить сегодня-завтра (0-5 дней).
-            if 0 <= days_left <= 3:
+            if 0 <= days_left <= 5:
                 urgent_list.append(inv)
 
     finally:
@@ -46,10 +48,9 @@ def format_alert_message(invoices):
 
     for inv in invoices:
         # Вычисляем дедлайн для отображения
-        deadline = inv.supply_date + timedelta(days=inv.payment_term_days)
-        deadline_str = deadline.strftime("%d.%m.%Y")
+        deadline_str = inv.deadline_date.strftime("%d.%m.%Y")
 
-        row = f"• {inv.counterparty.name} (Счет {inv.invoice_number}) До {deadline_str}\n"
+        row = f"• {inv.counterparty.name} (Счет {inv.invoice_number}) до {deadline_str}\n"
         text += row + "\n"
 
 
