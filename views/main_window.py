@@ -1,9 +1,10 @@
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QVBoxLayout, QWidget
-from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QMainWindow, QTabWidget, QVBoxLayout, QWidget, QMessageBox
+from PySide6.QtCore import QTimer
 
 # Импортируем ваши готовые окна (View)
 from views.invoice_view import InvoiceView
 from views.counterparty_view import CounterpartyView
+from services.notification_service import get_urgent_invoices, format_alert_message
 
 
 class MainWindow(QMainWindow):
@@ -35,6 +36,9 @@ class MainWindow(QMainWindow):
         # хорошо бы, чтобы при возвращении на первую вкладку данные обновились.
         self.tabs.currentChanged.connect(self.on_tab_change)
 
+        # Запуск проверки уведомлений через 0,1 сек после запуска
+        QTimer.singleShot(100, self.check_notifications)
+
     def on_tab_change(self, index):
         """
         Этот метод срабатывает, когда пользователь переключает вкладку.
@@ -49,3 +53,20 @@ class MainWindow(QMainWindow):
         # Если перешли на вкладку контрагентов (индекс 1)
         if index == 1:
             self.counterparty_tab.load_data()
+
+    def check_notifications(self):
+        """
+        Вызывает сервис проверки дат и показывает окно, если есть долги.
+        """
+        # 1. Получаем список "горящих" счетов
+        urgent_invoices = get_urgent_invoices()
+
+        # 2. Если список не пуст — показываем сообщение
+        if urgent_invoices:
+            message_text = format_alert_message(urgent_invoices)
+
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Напоминание об оплате")
+            msg.setText(message_text)
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec()
