@@ -1,20 +1,20 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from views.invoice_view import InvoiceView
-# Импортируем наше новое окно
-from views.counterparty_view import CounterpartyView
+from views.main_window import MainWindow
 
 
 def main():
     app = QApplication(sys.argv)
 
-    window = InvoiceView()
-    window.setWindowTitle("Журнал счетов")
-    window.resize(800, 500)
-    # Создаем и показываем окно справочника
-    window = CounterpartyView()
-    window.setWindowTitle("Справочник Контрагентов")
-    window.resize(800, 500)
+    app.setStyle("Fusion")
+
+    window = MainWindow()
+
+    # Увеличить шрифт во всем приложении
+    font = app.font()
+    font.setPointSize(10)  # Размер шрифта 10 или 12
+    app.setFont(font)
+    
     window.show()
 
     sys.exit(app.exec())

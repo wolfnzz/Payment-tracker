@@ -14,7 +14,7 @@ class AddInvoiceDialog(QDialog):
             self.setWindowTitle("Новый счет")
 
         #self.setWindowTitle("Новый счет")
-        self.setFixedSize(350, 400)
+        self.setFixedSize(350, 450)
 
         layout = QVBoxLayout()
 
@@ -31,6 +31,13 @@ class AddInvoiceDialog(QDialog):
         self.number_input.setPlaceholderText("Номер счета (напр. №123)")
         layout.addWidget(QLabel("Номер счета:"))
         layout.addWidget(self.number_input)
+
+        # Дата счета
+        layout.addWidget(QLabel("Дата счета:"))
+        self.invoice_date_input = QDateEdit()
+        self.invoice_date_input.setCalendarPopup(True)
+        self.invoice_date_input.setDate(QDate.currentDate())
+        layout.addWidget(self.invoice_date_input)
 
         # Сумма
         self.amount_input = QLineEdit()
@@ -89,9 +96,14 @@ class AddInvoiceDialog(QDialog):
 
         self.amount_input.setText(str(data['amount']))
 
+        # Дата поставки
         py_date = data['supply_date']
         q_date = QDate(py_date.year, py_date.month, py_date.day)
         self.date_input.setDate(q_date)
+
+        # Дата счета
+        inv_date = data['invoice_date']
+        self.invoice_date_input.setDate(QDate(inv_date.year, inv_date.month, inv_date.day))
 
         self.term_input.setValue(data['terms'])
 
@@ -126,8 +138,9 @@ class AddInvoiceDialog(QDialog):
         return {
             "counterparty_id": self.combo_supplier.currentData(),
             "number": self.number_input.text(),
-            "amount": float(self.amount_input.text()),
+            "invoice_date": self.invoice_date_input.date().toPython(),
             "supply_date": self.date_input.date().toPython(),
+            "amount": float(self.amount_input.text()),
             "terms": self.term_input.value(),
             "is_paid": self.paid_check.isChecked()
         }

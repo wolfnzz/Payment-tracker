@@ -47,7 +47,7 @@ class Invoice(Base):
 
     # Статус оплаты
     is_paid = Column(Boolean, default=False)
-    # comment = Column(String, nullable=True)
+    payment_date = Column(Date, nullable=True)  # Дата фактической оплаты (может быть пустой)
 
     # Связь таблиц
     counterparty = relationship("Counterparty", back_populates="invoices")

@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                                QTableWidget, QTableWidgetItem, QPushButton,
-                               QHeaderView, QMessageBox)
+                               QHeaderView, QMessageBox, QInputDialog)
 from PySide6.QtCore import Qt
 from viewmodels.counterparty_viewmodel import CounterpartyViewModel
 from views.add_counterparty_dialog import AddCounterpartyDialog
@@ -26,13 +26,16 @@ class CounterpartyView(QWidget):
         # --- Кнопки управления (сверху) ---
         btn_layout = QHBoxLayout()
         self.btn_add = QPushButton("Добавить контрагента")
+        self.btn_edit = QPushButton("Редактировать название")
         self.btn_delete = QPushButton("Удалить выбранного")
 
         # Стили
         self.btn_add.setStyleSheet("background-color: #11a629; padding: 5px;")
+        self.btn_edit.setStyleSheet("background-color: #cacc62; padding: 5px;")
         self.btn_delete.setStyleSheet("background-color: #d61313; padding: 5px;")
 
         btn_layout.addWidget(self.btn_add)
+        btn_layout.addWidget(self.btn_edit)
         btn_layout.addWidget(self.btn_delete)
         btn_layout.addStretch()  # Сдвигаем кнопки влево
 
@@ -59,6 +62,7 @@ class CounterpartyView(QWidget):
 
         # --- Подключение событий ---
         self.btn_add.clicked.connect(self.open_add_dialog)
+        self.btn_edit.clicked.connect(self.edit_counterparty)
         self.btn_delete.clicked.connect(self.delete_selected)
 
     def load_data(self):
@@ -117,3 +121,16 @@ class CounterpartyView(QWidget):
 
             self.view_model.delete_counterparty(c_id)
             self.load_data()
+
+    def edit_counterparty(self):
+        row = self.get_selected_row()
+        if row is None: return
+
+        c_id = int(self.table.item(row, 0).text())
+        old_name = self.table.item(row, 1).text()
+
+        new_name, ok = QInputDialog.getText(self, "Редактирование", "Изменить название:", text=old_name)
+        if ok and new_name.strip():
+            self.view_model.update_counterparty(c_id, new_name.strip())
+            self.load_data()
+

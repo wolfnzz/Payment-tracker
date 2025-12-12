@@ -45,3 +45,27 @@ class CounterpartyViewModel:
             db.rollback()
         finally:
             db.close()
+
+    def update_counterparty(self, c_id, new_name):
+        """Обновить имя"""
+        db = SessionLocal()
+        try:
+            c = db.query(Counterparty).filter(Counterparty.id == c_id).first()
+            if c:
+                c.name = new_name
+                db.commit()
+                return True
+            return False
+        finally:
+            db.close()
+
+    def get_invoices_by_counterparty(self, c_id):
+        """Получить счета конкретного поставщика"""
+        db = SessionLocal()
+        try:
+            c = db.query(Counterparty).filter(Counterparty.id == c_id).first()
+            if c:
+                return c.invoices
+            return []
+        finally:
+            db.close()
