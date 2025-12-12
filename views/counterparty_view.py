@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                                QTableWidget, QTableWidgetItem, QPushButton,
-                               QHeaderView, QMessageBox, QInputDialog)
+                               QHeaderView, QMessageBox, QInputDialog, QLineEdit)
 from PySide6.QtCore import Qt
 from viewmodels.counterparty_viewmodel import CounterpartyViewModel
 from views.add_counterparty_dialog import AddCounterpartyDialog
@@ -123,14 +123,41 @@ class CounterpartyView(QWidget):
             self.load_data()
 
     def edit_counterparty(self):
-        row = self.get_selected_row()
-        if row is None: return
+        """Редактирование названия"""
+        selected_rows = self.table.selectionModel().selectedRows()
+        if not selected_rows:
+            QMessageBox.warning(self, "Внимание", "Выберите строку для редактирования")
+            return
 
-        c_id = int(self.table.item(row, 0).text())
-        old_name = self.table.item(row, 1).text()
+        row_idx = selected_rows[0].row()
 
-        new_name, ok = QInputDialog.getText(self, "Редактирование", "Изменить название:", text=old_name)
-        if ok and new_name.strip():
-            self.view_model.update_counterparty(c_id, new_name.strip())
-            self.load_data()
 
+        c_id = int(self.table.item(row_idx, 0).text())
+        old_name = self.table.item(row_idx, 1).text()
+
+        dialog = QInputDialog(self)
+        dialog.setWindowTitle("Редактирование")
+        dialog.setLabelText("Изменить название:")
+        dialog.setTextValue(old_name)
+        dialog.setInputMode(QInputDialog.TextInput)
+
+        dialog.setOkButtonText("Сохранить")
+        dialog.setCancelButtonText("Отмена")
+
+        if dialog.exec():
+            new_name = dialog.textValue()
+
+            if new_name.strip():
+                stripped_name = new_name.strip()
+
+                if stripped_name == old_name:
+                    return
+
+                # Пытаемся обновить
+                success = self.view_model.update_counterparty(c_id, stripped_name)
+
+                if success:
+                    self.load_data()
+                else:
+                    QMessageBox.warning(self, "Ошибка",
+                                        f"Не удалось переименовать в '{stripped_name}'.\nВозможно, имя уже занято.")

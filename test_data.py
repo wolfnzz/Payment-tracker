@@ -33,8 +33,9 @@ def populate_test_data():
             amount=150000.00,
             invoice_date=date(2025, 12, 1),
             supply_date=date(2025, 12, 5),  # Поставка 5 декабря
-            payment_term_days=14,  # Оплата через 14 дней (до 19 декабря)
-            is_paid=False
+            deadline_date=date(2025, 12, 19),
+            is_paid=False,
+            payment_date=None
         )
 
         # Счет 2 (Уже оплачен)
@@ -44,8 +45,9 @@ def populate_test_data():
             amount=5600.50,
             invoice_date=date(2025, 11, 20),
             supply_date=date(2025, 11, 22),
-            payment_term_days=5,
-            is_paid=True  # поле "Оплачено"
+            deadline_date=date(2025, 11, 27),
+            is_paid=True,  # поле "Оплачено"
+            payment_date=date(2025, 11, 26)  # Дата фактической оплаты
         )
 
         db.add(invoice_1)
