@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                                QTableWidget, QTableWidgetItem, QPushButton,
-                               QHeaderView, QMessageBox, QAbstractItemView)
+                               QHeaderView, QMessageBox, QAbstractItemView, QFileDialog)
 from PySide6.QtGui import QColor
 from viewmodels.invoice_viewmodel import InvoiceViewModel
 from views.add_invoice_dialog import AddInvoiceDialog
@@ -24,9 +24,13 @@ class InvoiceView(QWidget):
 
         #self.btn_add.setStyleSheet("background-color: #11a629; padding: 5px;")
 
+        self.btn_export = QPushButton("Выгрузить в Excel")
+
+
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_delete)
         btn_layout.addWidget(self.btn_status)
+        btn_layout.addWidget(self.btn_export)
         btn_layout.addStretch()
 
         # Таблица
@@ -63,6 +67,7 @@ class InvoiceView(QWidget):
         self.btn_add.clicked.connect(self.open_add_dialog)
         self.btn_delete.clicked.connect(self.delete_current_invoice)
         self.btn_status.clicked.connect(self.toggle_status)
+        self.btn_export.clicked.connect(self.export_to_excel)
 
         # Когда дважды кликаем по ячейке -> вызываем edit_current_invoice
         self.table.cellDoubleClicked.connect(self.edit_current_invoice)
@@ -201,3 +206,28 @@ class InvoiceView(QWidget):
         if reply == QMessageBox.Yes:
             self.view_model.delete_invoice(inv_id)
             self.load_data()
+
+    def export_to_excel(self):
+        """Обработка нажатия на кнопку экспорта"""
+
+        # Открываем системное окно "Сохранить как"
+
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Сохранить отчет",  # Заголовок окна
+            "Отчет_счета.xlsx",  # Имя файла по умолчанию
+            "Excel Files (*.xlsx)"
+        )
+
+        # Если пользователь нажал "Отмена"
+        if not filename:
+            return
+
+        # Передаем задачу во ViewModel
+        success, message = self.view_model.export_data(filename)
+
+
+        if success:
+            QMessageBox.information(self, "Экспорт", message)
+        else:
+            QMessageBox.critical(self, "Ошибка", message)
