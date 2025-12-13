@@ -120,17 +120,17 @@ class InvoiceViewModel:
         finally:
             db.close()
 
-    def export_data(self, filename):
+    def export_data(self, filename, supplier_id=None, date_type=None, filter_date=None, is_paid_filter=None):
         """
-        Получает свежие данные из БД и отправляет их в Excel-сервис
+        Получает отфильтрованные данные из БД и отправляет их в Excel-сервис
         """
-        # Берем все счета
-        invoices = self.get_all_invoices()
+        # Берем все отфильтрованные счета
+        invoices = self.get_filtered_invoices(supplier_id, date_type, filter_date, is_paid_filter)
 
         # Отправляем в сервис
         success, message = save_invoices_to_excel(invoices, filename)
         return success, message
-    def get_filtered_invoices(self, supplier_id=None, date_type=None, filter_date=None):
+    def get_filtered_invoices(self, supplier_id=None, date_type=None, filter_date=None, is_paid_filter=None):
         """
         Фильтрация счетов.
         :param supplier_id: ID поставщика (или None, если нужны все)
@@ -154,6 +154,9 @@ class InvoiceViewModel:
                     if inv.deadline_date != filter_date:
                         continue
 
+            if is_paid_filter is not None:
+                if inv.is_paid != is_paid_filter:
+                    continue
             filtered.append(inv)
 
         return filtered

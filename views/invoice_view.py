@@ -47,6 +47,13 @@ class InvoiceView(QWidget):
         self.filter_date_edit.setEnabled(False)
         filter_layout.addWidget(self.filter_date_edit)
 
+        filter_layout.addWidget(QLabel("   Статус:"))
+        self.filter_status_combo = QComboBox()
+        self.filter_status_combo.addItem("Все статусы", None)
+        self.filter_status_combo.addItem("Оплачено", True)
+        self.filter_status_combo.addItem("Не оплачено", False)
+        filter_layout.addWidget(self.filter_status_combo)
+
         # Кнопки Применить / Сбросить
         self.btn_apply_filter = QPushButton("Найти")
         self.btn_reset_filter = QPushButton("Сброс")
@@ -273,16 +280,24 @@ class InvoiceView(QWidget):
         if not filename:
             return
 
-        # Передаем задачу во ViewModel
-        success, message = self.view_model.export_data(filename)
+        supplier_id = self.filter_supplier_combo.currentData()
+        date_type = self.filter_date_type.currentData()
+        filter_date = self.filter_date_edit.date().toPython()
+        status = self.filter_status_combo.currentData()
 
+        # Передаем задачу во ViewModel
+        success, message = self.view_model.export_data(
+            filename,
+            supplier_id,
+            date_type,
+            filter_date,
+            status
+        )
 
         if success:
             QMessageBox.information(self, "Экспорт", message)
         else:
             QMessageBox.critical(self, "Ошибка", message)
-            #self.load_data()
-            self.apply_filter()
 
     def toggle_date_edit(self):
         """Включает поле даты только если выбран тип фильтрации по дате"""
@@ -300,9 +315,12 @@ class InvoiceView(QWidget):
         # 3. Значение даты
         py_date = self.filter_date_edit.date().toPython()
 
+        # Тип статуса
+        status = self.filter_status_combo.currentData()
+
         # 4. Загружаем отфильтрованные данные
         # (Передаем этот список в load_data)
-        filtered_list = self.view_model.get_filtered_invoices(supplier_id, date_type, py_date)
+        filtered_list = self.view_model.get_filtered_invoices(supplier_id, date_type, py_date, status)
         self.load_data(invoices_list=filtered_list)
 
     def reset_filter(self):
@@ -310,4 +328,5 @@ class InvoiceView(QWidget):
         self.filter_supplier_combo.setCurrentIndex(0)  # Все
         self.filter_date_type.setCurrentIndex(0)  # Не учитывать
         self.filter_date_edit.setDate(QDate.currentDate())
+        self.filter_status_combo.setCurrentIndex(0)
         self.load_data()  # Загружаем всё
