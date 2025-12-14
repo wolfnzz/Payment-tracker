@@ -71,12 +71,14 @@ class InvoiceView(QWidget):
         self.btn_delete = QPushButton("Удалить счет")
         self.btn_status = QPushButton("Изменить статус оплаты")
         self.btn_export = QPushButton("Экспорт в Excel")
-
+        self.btn_undo = QPushButton("Отменить действие (Ctrl+Z)")
+        self.btn_undo.setShortcut("Ctrl+Z") #горячая клавиша
 
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_delete)
         btn_layout.addWidget(self.btn_status)
         btn_layout.addWidget(self.btn_export)
+        btn_layout.addWidget(self.btn_undo)
         btn_layout.addStretch()
 
         # Таблица
@@ -114,6 +116,7 @@ class InvoiceView(QWidget):
         self.btn_delete.clicked.connect(self.delete_current_invoice)
         self.btn_status.clicked.connect(self.toggle_status)
         self.btn_export.clicked.connect(self.export_to_excel)
+        self.btn_undo.clicked.connect(self.undo_action)
 
         # Когда дважды кликаем по ячейке -> вызываем edit_current_invoice
         self.table.cellDoubleClicked.connect(self.edit_current_invoice)
@@ -261,10 +264,15 @@ class InvoiceView(QWidget):
         inv_id = int(self.table.item(row, 0).text())  # 0 - это скрытый столбец ID
         inv_number = self.table.item(row, 1).text()
 
-        reply = QMessageBox.question(self, "Удаление",
-                                     f"Удалить счет № {inv_number}?",
-                                     QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
+        rmv_box = QMessageBox(self)
+        rmv_box.setWindowTitle("Удаление")
+        rmv_box.setText(f"Удалить счет № {inv_number}?")
+        rmv_box.setIcon(QMessageBox.Question)
+        rmv_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        rmv_box.button(QMessageBox.Yes).setText("Да")
+        rmv_box.button(QMessageBox.No).setText("Нет")
+
+        if rmv_box.exec() == QMessageBox.Yes:
             self.view_model.delete_invoice(inv_id)
             self.apply_filter()
 
@@ -356,3 +364,13 @@ class InvoiceView(QWidget):
                 if self.filter_supplier_combo.itemData(i) == current_id:
                     self.filter_supplier_combo.setCurrentIndex(i)
                     break
+
+    def undo_action(self):
+        success, message = self.view_model.undo_last_action()
+        if success:
+            # Если отмена прошла успешно, нужно обновить таблицу,
+            # чтобы увидеть изменения (например, вернувшуюся запись)
+            self.apply_filter()
+            # QMessageBox.information(self, "Отмена", message) # Можно включить уведомление
+        else:
+            QMessageBox.warning(self, "Отмена", message)

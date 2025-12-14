@@ -3,6 +3,8 @@ from sqlalchemy.orm import joinedload
 from models.database import get_db
 from models.entities import Invoice, Counterparty
 from services.excel_exporter import save_invoices_to_excel
+from services.undo_service import undo_manager
+from models.commands import AddInvoiceCommand, EditInvoiceCommand, DeleteInvoiceCommand
 
 class InvoiceViewModel:
     def get_all_invoices(self):
@@ -26,74 +28,39 @@ class InvoiceViewModel:
 
     def add_invoice(self, counterparty_id, number, invoice_date, supply_date, amount, deadline_date, is_paid, payment_date=None):
         """Создать счет"""
-        db = get_db()
-        try:
-            # Если галочка стоит, но дату не передали -> ставим сегодня (для удобства)
-            # Если передали (вручную в диалоге) -> оставляем как есть
-            pay_date = None
-            if is_paid:
-                pay_date = payment_date if payment_date else date.today()
+        data = {
+            'counterparty_id': counterparty_id,
+            'number': number,
+            'amount': amount,
+            'invoice_date': invoice_date,
+            'supply_date': supply_date,
+            'deadline_date': deadline_date,
+            'is_paid': is_paid,
+            'payment_date': payment_date if is_paid else None
+        }
 
-            new_inv = Invoice(
-                counterparty_id=counterparty_id,
-                invoice_number=number,
-                invoice_date=invoice_date, #date.today()
-                supply_date=supply_date,
-                amount=amount,
-                deadline_date=deadline_date,
-                is_paid=is_paid,
-                payment_date=pay_date
-            )
-            db.add(new_inv)
-            db.commit()
-            return True
-        except Exception as e:
-            print(f"Ошибка создания счета: {e}")
-            db.rollback()
-            return False
-        finally:
-            db.close()
+        # Создаем команду
+        command = AddInvoiceCommand(data)
+
+        # Передаем менеджеру (он сам вызовет execute)
+        return undo_manager.push(command)
 
     def update_invoice(self, invoice_id, counterparty_id, number, invoice_date,
                        supply_date, amount, deadline_date, is_paid, payment_date=None):
         """Обновить существующий счет"""
-        db = get_db()
-        try:
-            # Ищем счет по ID
-            inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
-            if inv:
-                # Обновляем поля
-                inv.counterparty_id = counterparty_id
-                inv.invoice_number = number
-                inv.invoice_date = invoice_date
-                inv.supply_date = supply_date
-                inv.amount = amount
-                inv.deadline_date = deadline_date
+        new_data = {
+            'counterparty_id': counterparty_id,
+            'number': number,
+            'amount': amount,
+            'invoice_date': invoice_date,
+            'supply_date': supply_date,
+            'deadline_date': deadline_date,
+            'is_paid': is_paid,
+            'payment_date': payment_date if is_paid else None
+        }
 
-                # Логика даты оплаты:
-                if is_paid:
-                    # Если передали конкретную дату из диалога - берем её
-                    if payment_date:
-                        inv.payment_date = payment_date
-                    # Если даты нет, а раньше было "не оплачено" - ставим сегодня
-                    elif not inv.is_paid:
-                        inv.payment_date = date.today()
-                    # Иначе оставляем старую дату (если уже было оплачено)
-                else:
-                    inv.payment_date = None
-
-                inv.is_paid = is_paid
-
-                db.commit()  # Сохраняем изменения
-                return True
-            return False
-        except Exception as e:
-            print(f"Ошибка обновления: {e}")
-            db.rollback()
-            return False
-        finally:
-            db.close()
-
+        command = EditInvoiceCommand(invoice_id, new_data)
+        return undo_manager.push(command)
     def toggle_payment_status(self, invoice_id):
         """Переключить статус оплаты (Оплачено <-> Не оплачено)"""
         db = get_db()
@@ -109,16 +76,12 @@ class InvoiceViewModel:
 
     def delete_invoice(self, invoice_id):
         """Удалить счет"""
-        db = get_db()
-        try:
-            inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
-            if inv:
-                db.delete(inv)
-                db.commit()
-        except Exception as e:
-            db.rollback()
-        finally:
-            db.close()
+        command = DeleteInvoiceCommand(invoice_id)
+        return undo_manager.push(command)
+
+    def undo_last_action(self):
+        """Метод, который вызовет View при нажатии кнопки"""
+        return undo_manager.undo()
 
     def export_data(self, filename, supplier_id=None, date_type=None, filter_date=None, is_paid_filter=None):
         """
