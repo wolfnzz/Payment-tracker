@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from sqlalchemy.orm import joinedload
-from models.database import SessionLocal
+from models.database import get_db
 from models.entities import Invoice
 
 
@@ -9,7 +9,7 @@ def get_urgent_invoices():
     Возвращает список счетов, которые нужно оплатить в ближайшие 5 дней.
     Также возвращает просроченные счета.
     """
-    db = SessionLocal()
+    db = get_db()
     urgent_list = []
 
     try:

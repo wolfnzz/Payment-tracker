@@ -29,10 +29,10 @@ class CounterpartyView(QWidget):
         self.btn_edit = QPushButton("Редактировать название")
         self.btn_delete = QPushButton("Удалить выбранного")
 
-        # Стили
-        self.btn_add.setStyleSheet("background-color: #11a629; padding: 5px;")
-        self.btn_edit.setStyleSheet("background-color: #cacc62; padding: 5px;")
-        self.btn_delete.setStyleSheet("background-color: #d61313; padding: 5px;")
+        # # Стили
+        # self.btn_add.setStyleSheet("background-color: #11a629; padding: 5px;")
+        # self.btn_edit.setStyleSheet("background-color: #cacc62; padding: 5px;")
+        # self.btn_delete.setStyleSheet("background-color: #d61313; padding: 5px;")
 
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_edit)

@@ -127,6 +127,10 @@ class InvoiceView(QWidget):
     def load_data(self, invoices_list=None):
         invoices = self.view_model.get_all_invoices()
         if not (invoices_list is None): invoices = invoices_list
+
+        # Сортировка списка поставщиков по алфавиту перед отображением
+        invoices.sort(key=lambda x: x.counterparty.name.lower() if x.counterparty else "")
+
         self.table.setRowCount(0)
 
         for row, inv in enumerate(invoices):
@@ -330,3 +334,25 @@ class InvoiceView(QWidget):
         self.filter_date_edit.setDate(QDate.currentDate())
         self.filter_status_combo.setCurrentIndex(0)
         self.load_data()  # Загружаем всё
+
+    def refresh_suppliers_combo(self):
+        """Обновляет выпадающий список поставщиков в фильтре"""
+        # 1. Запоминаем, кто сейчас выбран (чтобы не сбросилось при обновлении)
+        current_id = self.filter_supplier_combo.currentData()
+
+        # 2. Очищаем список
+        self.filter_supplier_combo.clear()
+        self.filter_supplier_combo.addItem("Все поставщики", None)
+
+        # 3. Загружаем заново из БД (теперь там будет новый поставщик)
+        suppliers = self.view_model.get_counterparties_for_combo()
+        for s in suppliers:
+            self.filter_supplier_combo.addItem(s.name, s.id)
+
+        # 4. Пытаемся восстановить выбор
+        if current_id is not None:
+            # Ищем индекс этого ID
+            for i in range(self.filter_supplier_combo.count()):
+                if self.filter_supplier_combo.itemData(i) == current_id:
+                    self.filter_supplier_combo.setCurrentIndex(i)
+                    break

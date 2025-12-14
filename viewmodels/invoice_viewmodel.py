@@ -1,13 +1,13 @@
 from datetime import date
 from sqlalchemy.orm import joinedload
-from models.database import SessionLocal
+from models.database import get_db
 from models.entities import Invoice, Counterparty
 from services.excel_exporter import save_invoices_to_excel
 
 class InvoiceViewModel:
     def get_all_invoices(self):
         """Получить все счета с подгрузкой поставщика"""
-        db = SessionLocal()
+        db = get_db()
         try:
             # joinedload нужен, чтобы сразу загрузить данные из связанной таблицы counterparties
             # иначе, когда закроем сессию, программа упадет при попытке узнать имя поставщика
@@ -18,7 +18,7 @@ class InvoiceViewModel:
 
     def get_counterparties_for_combo(self):
         """Получить список поставщиков для выпадающего списка (id и имя)"""
-        db = SessionLocal()
+        db = get_db()
         try:
             return db.query(Counterparty).order_by(Counterparty.name).all()
         finally:
@@ -26,7 +26,7 @@ class InvoiceViewModel:
 
     def add_invoice(self, counterparty_id, number, invoice_date, supply_date, amount, deadline_date, is_paid, payment_date=None):
         """Создать счет"""
-        db = SessionLocal()
+        db = get_db()
         try:
             # Если галочка стоит, но дату не передали -> ставим сегодня (для удобства)
             # Если передали (вручную в диалоге) -> оставляем как есть
@@ -57,7 +57,7 @@ class InvoiceViewModel:
     def update_invoice(self, invoice_id, counterparty_id, number, invoice_date,
                        supply_date, amount, deadline_date, is_paid, payment_date=None):
         """Обновить существующий счет"""
-        db = SessionLocal()
+        db = get_db()
         try:
             # Ищем счет по ID
             inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
@@ -96,7 +96,7 @@ class InvoiceViewModel:
 
     def toggle_payment_status(self, invoice_id):
         """Переключить статус оплаты (Оплачено <-> Не оплачено)"""
-        db = SessionLocal()
+        db = get_db()
         try:
             inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
             if inv:
@@ -109,7 +109,7 @@ class InvoiceViewModel:
 
     def delete_invoice(self, invoice_id):
         """Удалить счет"""
-        db = SessionLocal()
+        db = get_db()
         try:
             inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
             if inv:

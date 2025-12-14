@@ -1,4 +1,4 @@
-from models.database import SessionLocal
+from models.database import get_db
 from models.entities import Counterparty
 
 
@@ -9,7 +9,7 @@ class CounterpartyViewModel:
 
     def get_all_counterparties(self):
         """Получить список всех поставщиков"""
-        db = SessionLocal()
+        db = get_db()
         try:
             # Запрос: дай всех, отсортируй по имени
             return db.query(Counterparty).order_by(Counterparty.name).all()
@@ -18,7 +18,7 @@ class CounterpartyViewModel:
 
     def add_counterparty(self, name):
         """Добавить нового поставщика"""
-        db = SessionLocal()
+        db = get_db()
         try:
             new_c = Counterparty(name=name)
             db.add(new_c)
@@ -33,7 +33,7 @@ class CounterpartyViewModel:
 
     def delete_counterparty(self, counterparty_id):
         """Удалить поставщика по ID"""
-        db = SessionLocal()
+        db = get_db()
         try:
             # Ищем по ID
             c = db.query(Counterparty).filter(Counterparty.id == counterparty_id).first()
@@ -48,7 +48,7 @@ class CounterpartyViewModel:
 
     def update_counterparty(self, c_id, new_name):
         """Обновить имя"""
-        db = SessionLocal()
+        db = get_db()
         try:
             c = db.query(Counterparty).filter(Counterparty.id == c_id).first()
             if c:
@@ -61,7 +61,7 @@ class CounterpartyViewModel:
 
     def get_invoices_by_counterparty(self, c_id):
         """Получить счета конкретного поставщика"""
-        db = SessionLocal()
+        db = get_db()
         try:
             c = db.query(Counterparty).filter(Counterparty.id == c_id).first()
             if c:
